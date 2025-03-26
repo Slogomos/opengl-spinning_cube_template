@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <stb/stb_image.h>
 
 #include <iostream>
 #include <cmath>
@@ -8,6 +9,7 @@
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
+#include "textures.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
     glViewport(0, 0, width, height);
@@ -19,16 +21,16 @@ void processInput(GLFWwindow* window){
 }
 
 GLfloat vertices[] = {
-    //  Coordinates    /      Colors  //
-    0.5f,  0.5f, 0.0f,   0.8f, 0.3f, 0.02f,
-    0.5f, -0.5f, 0.0f,   1.0f, 0.6f, 0.02f,
-   -0.5f, -0.5f, 0.0f,   0.4f, 0.45f, 0.7f,
-   -0.5f,  0.5f, 0.0f,   0.6f, 0.2f, 0.45f
+    //  Coordinates    /      Colors        /   Textures
+   -0.5f, -0.5f, 0.0f,   0.8f, 0.3f, 0.02f,   0.0f, 0.0f,
+   -0.5f,  0.5f, 0.0f,   1.0f, 0.6f, 0.02f,   0.0f, 1.0f,
+    0.5f,  0.5f, 0.0f,   0.4f, 0.45f, 0.7f,   1.0f, 1.0f,
+    0.5f, -0.5f, 0.0f,   0.6f, 0.2f, 0.45f,   1.0f, 0.0f
 };
 
 GLuint indices[] = {
-    0, 1, 3,
-    1, 2, 3
+    0, 2, 1,
+    0, 3, 2
 };
 
 int main(){
@@ -60,29 +62,20 @@ int main(){
     VBO VBO1(vertices, sizeof(vertices));
     EBO EBO1(indices, sizeof(indices));
 
-    VAO1.linkAttrib(VBO1, 0, 3, GL_FLOAT, 6 * sizeof(float), (void*)0);
-    VAO1.linkAttrib(VBO1, 1, 3, GL_FLOAT, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    VAO1.linkAttrib(VBO1, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+    VAO1.linkAttrib(VBO1, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    VAO1.linkAttrib(VBO1, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     VAO1.Unbind();
     VBO1.Unbind();
     EBO1.Unbind();
 
-    GLuint uniID = glGetUniformLocation(shaderProgram.ID, "scale");
-    GLuint rotationLoc = glGetUniformLocation(shaderProgram.ID, "rotation4d");
+    // textures
+    Texture box("../textures/wall.jpg", GL_TEXTURE0);
 
+    GLuint tex0Uni = glGetUniformLocation(shaderProgram.ID, "tex0");
+    
     while (!glfwWindowShouldClose(window)){
-        float angle = glfwGetTime();
-        float cosTheta = cos(angle);
-        float sinTheta = sin(angle);
-
-        GLfloat rotation4d[] = {
-            cosTheta, -sinTheta, 0, 0,
-            sinTheta, cosTheta,  0, 0,
-            0,       0,          1, 0,
-            0,       0,          0, 1
-        };
-
-
-        // input
+                // input
         processInput(window);
 
         //  rendering commands
@@ -90,8 +83,9 @@ int main(){
         glClear(GL_COLOR_BUFFER_BIT);
         
         shaderProgram.Activate();
-        glUniform1f(uniID, 0.0f);
-        glUniformMatrix4fv(rotationLoc, 1, GL_FALSE, rotation4d);
+        
+        glUniform1i(tex0Uni, 0);
+        box.Bind();
 
         VAO1.Bind();
 
@@ -106,6 +100,7 @@ int main(){
     VAO1.Delete();
     VBO1.Delete();
     EBO1.Delete();
+    box.Unbind();
     shaderProgram.Delete();
 
     glfwDestroyWindow(window);
